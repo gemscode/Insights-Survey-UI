@@ -1,13 +1,18 @@
 import React, {Component} from 'react'
 import { TextField } from "@material-ui/core";
 import Button from "@material-ui/core/Button";
-import {Field, formValueSelector, getFormValues, reduxForm} from 'redux-form';
-import {connect, useSelector} from 'react-redux'
+import {Field, formValueSelector, reduxForm} from 'redux-form';
+import {connect} from 'react-redux'
 
 class SurveyForm extends Component {
 
     constructor(props) {
         super(props)
+
+        this.state = { API_URL: "http://localhost:3090" };
+
+        if (typeof process.env.API_URL !== 'undefined')
+            this.state.API_URL = process.env.API_URL;
     }
 
     renderInput = (form, meta) => (
@@ -23,10 +28,10 @@ class SurveyForm extends Component {
 
     result = (userLogin, moodList, insightList, insightPerson, noteInput) => {
 
-        if (userLogin == '')
+        if (userLogin == "")
             userLogin = [{survey_id:2, user_id:"114ea085-1410-43c6-b347-1d7a900fdc51"}];
 
-        if (insightPerson.id == '')
+        if (insightPerson.id == "")
             insightPerson = {id: "3f0ea315-3086-424d-bcea-b388b45e5b49"};
 
         let moodInput = []
@@ -37,16 +42,12 @@ class SurveyForm extends Component {
 
         let surveyNote = [{note: noteInput}];
 
-        let staticNote = [{"note":"my other web note"}]
-
-        let data = {
+        return {
             user: userLogin,
             mood: moodInput,
             insight: insightInput,
             note: surveyNote
         };
-
-        return data;
     }
 
     onSubmit = (values) => {
@@ -73,11 +74,11 @@ class SurveyForm extends Component {
                 }
             };
 
-            fetch('http://localhost:3080/api/survey/campaign', options)
+            fetch(this.state.API_URL+'/api/survey/campaign', options)
                 .then(res => res.json())
                 .then(res => {
                     if (res.error)
-                        window.alert(res.error);
+                        window.alert("\n\n" + res.error + "\n\n");
                     else
                         window.alert("\n\n Your insight was successfully recorded. \n You can find it in 'My Diary' from the main menu!\n\n");
                 })
@@ -101,6 +102,9 @@ class SurveyForm extends Component {
             <form onSubmit={this.props.handleSubmit(this.onSubmit)}>
                 <Field name="noteInput" component={this.renderInput}/>
                 <p/>
+                <Button variant="text" color="secondary">
+                    My Diary
+                </Button>
                 <Button type="submit" variant="contained" color="primary">
                     Submit
                 </Button>

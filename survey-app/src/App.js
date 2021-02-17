@@ -1,6 +1,6 @@
 import './css/App.css';
 import React, {Component} from "react";
-import {Avatar, Container, Divider, TextareaAutosize, TextField} from "@material-ui/core";
+import {Avatar, Divider, LinearProgress} from "@material-ui/core";
 import Mood from "./components/Mood/Mood.stories";
 import Inspiration from "./components/Inspiration/Inspiration.stories";
 import makeStyles from '@material-ui/core/styles/makeStyles';
@@ -60,10 +60,12 @@ class App extends Component {
           moods: [],
           inspirations: [],
           persons: [],
-          areMoodsLoaded: false,
-          areInspirationsLoaded: false,
-          arePersonsLoaded: false,
+          dataLoaded: false,
+          API_URL: "http://localhost:3090"
       }
+
+      if (typeof process.env.API_URL !== 'undefined')
+            this.state.API_URL = process.env.API_URL;
 
       this.useStyle = makeStyles((theme) => ({
           root: {
@@ -77,42 +79,61 @@ class App extends Component {
               backgroundColor: red[500],
           },
       }));
-  }
+    };
+
+    loadMoods() {
+        return fetch(this.state.API_URL+"/api/moods", {
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            }
+        }).then((response) => response.json()).catch( err => {
+            throw {source: "loadMoods", err:err};
+        })
+    };
+
+    loadInsights() {
+        return fetch(this.state.API_URL+"/api/inspirations", {
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            }
+        }).then((response) => response.json()).catch( err => {
+            throw {source: "loadInsights", err:err};
+        })
+    };
+
+    loadPersons(){
+        return fetch(this.state.API_URL+"/api/persons", {
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            }
+        }).then((response) => response.json()).catch( err => {
+            throw {source: "loadPersons", err:err};
+        })
+    };
 
   componentDidMount() {
-      Promise.all([
-          fetch('http://localhost:3080/api/moods')
-              .then(res => res.json())
-              .then(json => {
-                  this.setState({
-                      areMoodsLoaded: true,
-                      moods: json,
-                  })
-              }),
-          fetch('http://localhost:3080/api/inspirations')
-              .then(res => res.json())
-              .then(json => {
-                  this.setState({
-                      areInspirationsLoaded: true,
-                      inspirations: json,
-                  })
-              }),
-          fetch('http://localhost:3080/api/persons')
-              .then(res => res.json())
-              .then(json => {
-                  this.setState({
-                      arePersonsLoaded: true,
-                      persons: json,
-                  })
-              }),
-      ])
+
+      Promise.all([ this.loadMoods(), this.loadInsights(), this.loadPersons()])
+          .then (([moods, insights, persons]) => {
+              this.setState({
+                  dataLoaded: true,
+                  moods: moods,
+                  inspirations: insights,
+                  persons: persons,
+              })
+          }).catch((err) => {
+              console.log(err);
+          });
   }
 
   render() {
-      let {areMoodsLoaded, areInspirationsLoaded, arePersonsLoaded, moods, inspirations, persons} = this.state;
+      let {dataLoaded, moods, inspirations, persons} = this.state;
 
-      if (!(areMoodsLoaded && areInspirationsLoaded && arePersonsLoaded)) {
-          return <div> loading ...</div>;
+      if (!dataLoaded) {
+          return <LinearProgress />;
       } else {
           if (!Array.isArray(moods)) {
               moods = [moods]
